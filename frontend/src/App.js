@@ -5,36 +5,38 @@ import axios from 'axios'; // Import axios for making HTTP requests
 function App() {
   const [inputText, setInputText] = useState('');
   const [file, setFile] = useState(null);
+  const URL = 'https://sot2qb0384.execute-api.us-west-2.amazonaws.com/presignedUrl';
+
 
   const handleInputChange = (event) => {
     setInputText(event.target.value);
   };
 
-  const handleFileUpload=  (event) => {
-    setFile(event.target.files[0]);
-    // const selectedFile = event.target.files[0]; // Set the selected file to the state
-    // if (!selectedFile) {
-    //   console.error('No file selected');
-    //   return;
-    // }
+  const handleFileUpload= async (event) => {
+    const selectedFile = event.target.files[0]; // Set the selected file to the state
+    if (!selectedFile) {
+      console.error('No file selected');
+      return;
+    }
     
-
-    // try {
-    //   // Get pre-signed URL from server
-    //   const response = await axios.get('http://localhost:3000/presignedUrl', {
-    //     params: { fileName: "test" },
-    //   });
-    //   const presignedUrl = response.data;
-
-    //   // Upload file to S3 using pre-signed URL
-    //   await axios.put(presignedUrl, selectedFile, {
-    //     headers: { 'Content-Type': selectedFile.type },
-    //   });
-
-    //   console.log('File uploaded successfully');
-    // } catch (error) {
-    //   console.error('Error uploading file:', error);
-    // }
+    console.info(selectedFile.name);
+    try {
+      // Get pre-signed URL from server
+      const response = await axios.get(URL, {
+        params: { fileName: selectedFile.name},
+      });
+      console.info(response);
+      const presignedUrl = response.data;
+      console.info(presignedUrl);
+      // Upload file to S3 using pre-signed URL
+      const afterUpload = await axios.put(presignedUrl, selectedFile, {
+        headers: { 'Content-Type': selectedFile.type },
+      });
+      console.info(afterUpload);
+      console.log('File uploaded successfully');
+    } catch (error) {
+      console.error('Error uploading file:', error);
+    }
   };
 
   const handleSubmit = () => {

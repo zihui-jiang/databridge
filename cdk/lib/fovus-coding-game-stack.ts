@@ -6,12 +6,16 @@ import { BucketDeployment, Source } from 'aws-cdk-lib/aws-s3-deployment'
 
 import {  HttpLambdaIntegration } from 'aws-cdk-lib/aws-apigatewayv2-integrations';
 import { HttpApi, HttpMethod, HttpStage } from 'aws-cdk-lib/aws-apigatewayv2'
+import * as path from 'path';
 
 
 
 export class FovusCodingGameStack extends cdk.Stack {
-  private bukcetName = "emma-jiang-fovus-coding-game-file-storage-bucket";
-  private bukcetReigion = "us-west-2";
+  private readonly bukcetName = "emma-jiang-fovus-coding-game-file-storage-bucket";
+  private readonly bukcetReigion = "us-west-2";
+  private readonly TABLE_NAME = "FovusCodingGameStack-UploadedFile";
+  private readonly LAMBDA_PATH = path.resolve(__dirname, '../../lambda/');
+  private readonly FRONT_END_ASSET_PATH = "../frontend/build";
   constructor(scope: Construct, id: string, props?: cdk.StackProps) {
     super(scope, id, props);
     /************/
@@ -20,38 +24,35 @@ export class FovusCodingGameStack extends cdk.Stack {
     const requestProcessor = new Function(this, 'requestProcessor', {
       functionName: 'RequestProcessorLambda',
       runtime: Runtime.NODEJS_20_X,
-      handler: 'request-process.handler',
-      code: Code.fromAsset('lib/lambda'),
+      handler: 'index.handleUpload',
+      code: Code.fromAsset(this.LAMBDA_PATH),
     });
     requestProcessor.addEnvironment("BUCKET_NAME", this.bukcetName);
+    requestProcessor.addEnvironment("TABLE_NAME", this.TABLE_NAME);
 
     // Lambda function to generate pre-signed URLs
     const presignedProcessor = new Function(this, 'presignedProcessor', {
       functionName: 'PresignedProcessorLambda',
       runtime: Runtime.NODEJS_20_X,
-      handler: 'presigned-process.handler', 
-      code: Code.fromAsset('lib/lambda'),
+      handler: 'index.handleGetPreSignedURL', 
+      code: Code.fromAsset(this.LAMBDA_PATH),
     });
     presignedProcessor.addEnvironment("BUCKET_NAME", this.bukcetName);
     presignedProcessor.addEnvironment("BUCKET_REGION", this.bukcetReigion);
-
-    
-
-    
     /************/
     /*  APIGW   */
     /************/
-    const requestProcessorIntegration = new HttpLambdaIntegration('fileUploadAPI', requestProcessor);
-    const fileUploadAPI = new HttpApi(this, 'HttpApi', {
+    const requestProcessorIntegration = new HttpLambdaIntegration('fileUpload', requestProcessor);
+    const fileUploadAPI = new HttpApi(this, 'fileUpload', {
       apiName: `FileUploadAPI`,
       createDefaultStage: true,
     });
-    new HttpStage(this, 'Stage', {
+    new HttpStage(this, 'fileUploadStage', {
       httpApi: fileUploadAPI,
       stageName: 'beta',
     });
     fileUploadAPI.addRoutes({
-      path: '/hello',
+      path: '/fileUpload',
       methods: [ HttpMethod.POST ],
       integration: requestProcessorIntegration,
     });
@@ -59,11 +60,11 @@ export class FovusCodingGameStack extends cdk.Stack {
     
     // presignedAPI intergration
     const presignedProcessorIntegration = new HttpLambdaIntegration('PresignedUrlAPI', requestProcessor);
-    const presignedUrlAPI = new HttpApi(this, 'HttpApi', {
+    const presignedUrlAPI = new HttpApi(this, 'presignedUrlAPI', {
       apiName: `PresignedUrlAPI`,
       createDefaultStage: true,
     });
-    new HttpStage(this, 'Stage', {
+    new HttpStage(this, 'preSignedUrlStage', {
       httpApi: presignedUrlAPI,
       stageName: 'beta',
     });
@@ -89,7 +90,7 @@ export class FovusCodingGameStack extends cdk.Stack {
 
     // Deploy the built React app to the S3 bucket
     new BucketDeployment(this, 'ReactAppDeployment', {
-      sources: [Source.asset('frontend/build')], 
+      sources: [Source.asset(this.FRONT_END_ASSET_PATH)], 
       destinationBucket: fileStorageBucket,
       destinationKeyPrefix: 'web', // Optional: specify a prefix for the uploaded files in the bucket
     });
@@ -99,8 +100,9 @@ export class FovusCodingGameStack extends cdk.Stack {
     /************/
     /* DynamoDB */
     /************/
-    const TABLE_NAME = "FovusCodingGameStack-UploadedFile585C0719-1B4S7KHXJN0LY";
     const table = new dynamodb.Table(this, 'UploadedFile', {
+      tableName: this.TABLE_NAME,
+      billingMode: dynamodb.BillingMode.PAY_PER_REQUEST,
       partitionKey: { name: 'id', type: dynamodb.AttributeType.STRING },
       stream: dynamodb.StreamViewType.NEW_IMAGE,
     });

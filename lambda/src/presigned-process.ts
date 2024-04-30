@@ -6,7 +6,7 @@ const bucketName:string = process.env.BUCKET_NAME!;
 const bukcetReigion:string = process.env.BUCKET_REGION!;
 const s3Client = new S3Client({ region: bukcetReigion});
 
-exports.handler = async (event:any) => {
+export async function handleGetRequest(event:any) {
     // Process the event received:
     const fileName = event.queryStringParameters.fileName;
     console.log(event);

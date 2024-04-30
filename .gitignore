@@ -1,3 +1,4 @@
+# Text file used by Git to specify files and folders to ignore.
 *.js
 !jest.config.js
 *.d.ts

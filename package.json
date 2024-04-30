@@ -20,8 +20,9 @@
     "typescript": "~5.4.5"
   },
   "dependencies": {
+    "@aws-sdk/client-s3": "^3.565.0",
+    "@aws-sdk/s3-request-presigner": "^3.565.0",
     "aws-cdk-lib": "2.139.0",
-    "aws-sdk": "^2.1608.0",
     "constructs": "^10.0.0",
     "nanoid": "^5.0.7",
     "source-map-support": "^0.5.21"

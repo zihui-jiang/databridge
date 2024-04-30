@@ -4,17 +4,18 @@ import { nanoid } from 'nanoid'
 import { AWSError } from "aws-sdk";
 import { PromiseResult } from "aws-sdk/lib/request";
 
+
+
 exports.handler = async (event:any) => {
     // Process the event received:
     console.log(event);
     const idLength = 10;
     //TODO: parameterize this via env var
-    const bucketName = "emma-jiang-fovus-coding-game-file-storage-bucket";
+    const bucketName:string = process.env.BUCKET_NAME!;
     // Generate the ID, lenght is set to 10
     let id = nanoid(idLength);
-
     // upload the file to S3
-    await putObject(new s3Client(), "emma-jiang-fovus-coding-game-file-storage-bucket", id, event.body);
+    await putObject(new s3Client(), bucketName, id, event.body);
     new dynamoClient().putItem(); // upload item to dynamodb;
     return {
         statusCode: 200,
@@ -22,6 +23,11 @@ exports.handler = async (event:any) => {
         body: JSON.stringify({ message: "Hello, World!" }),
     };
 };
+
+
+export async function name(dynamoClient:dynamoClient, ) {
+    
+}
 
 
 // Use this helper function to upload an object to S3 bukect

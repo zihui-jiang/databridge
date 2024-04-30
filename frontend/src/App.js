@@ -4,8 +4,10 @@ import axios from 'axios'; // Import axios for making HTTP requests
 
 function App() {
   const [inputText, setInputText] = useState('');
-  const [file, setFile] = useState(null);
+  const [selectedFile, setSelectedFile] = useState(null);
+  const [uploadProgress, setUploadProgress] = useState(0);
   const URL = 'https://sot2qb0384.execute-api.us-west-2.amazonaws.com/presignedUrl';
+  const BUCKET_NAME = useState('');
 
 
   const handleInputChange = (event) => {
@@ -13,13 +15,16 @@ function App() {
   };
 
   const handleFileUpload= async (event) => {
-    const selectedFile = event.target.files[0]; // Set the selected file to the state
+    setSelectedFile(event.target.files[0]);
     if (!selectedFile) {
       console.error('No file selected');
       return;
     }
-    
-    console.info(selectedFile.name);
+    console.info(selectedFile.type);
+    if (selectedFile.type != 'text/plain') {
+      throw new Error("File type error")
+    }
+
     try {
       // Get pre-signed URL from server
       const response = await axios.get(URL, {
@@ -28,11 +33,27 @@ function App() {
       console.info(response);
       const presignedUrl = response.data;
       console.info(presignedUrl);
-      // Upload file to S3 using pre-signed URL
-      const afterUpload = await axios.put(presignedUrl, selectedFile, {
-        headers: { 'Content-Type': selectedFile.type },
+
+
+      const uploadResponse = await axios.put(presignedUrl, selectedFile, {
+        headers: {
+          "Content-Type": 'text/plain',
+        },
+        onUploadProgress: (progressEvent) => {
+          const percentCompleted = Math.round(
+            (progressEvent.loaded * 100) / progressEvent.total
+          );
+          setUploadProgress(percentCompleted);
+          console.log(`Upload Progress: ${percentCompleted}%`);
+        },
       });
-      console.info(afterUpload);
+
+    //   // Upload file to S3 using pre-signed URL
+    //   const uploadResponse = await axios.put(presignedUrl, selectedFile, {
+    //     headers: {
+    //       'Content-Type': 'text/plain', // Set the Content-Type header
+    //   } 
+    // });
       console.log('File uploaded successfully');
     } catch (error) {
       console.error('Error uploading file:', error);
@@ -43,7 +64,7 @@ function App() {
     // In the handleSubmit function, you can implement the logic to upload the file and input text to your backend without using any AWS Amplify resources. 
     // You can use standard HTTP requests (e.g., Fetch API) to communicate with your backend API.
     console.log('Input Text:', inputText);
-    console.log('File:', file);
+    // console.log('File:', file);
   };
 
 

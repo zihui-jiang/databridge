@@ -6,8 +6,7 @@ function App() {
   const [inputText, setInputText] = useState('');
   const [selectedFile, setSelectedFile] = useState(null);
   const [uploadProgress, setUploadProgress] = useState(0);
-  const URL = 'https://sot2qb0384.execute-api.us-west-2.amazonaws.com/presignedUrl';
-  const [BUCKET_NAME, setBucketName] = useState('');
+  const URL = 'https://sot2qb0384.execute-api.us-west-2.amazonaws.com';
 
 
   const handleInputChange = (event) => {
@@ -18,17 +17,19 @@ function App() {
     setSelectedFile(event.target.files[0]);
   };
 
-
-
-
-  const uploadToPresignedUrl  = async() => {
+  const getPresignedUrl =  async() => {
     // GET request: presigned URL
-    const response = await axios.get(URL, {
+    const response = await axios.get(URL+"/presignedUrl", {
       params: { fileName: selectedFile.name},
     });
-    const presignedUrl = response.data;
-    console.info(presignedUrl);
 
+    console.info(response);
+    return response;
+  };
+
+
+
+  const uploadToPresignedUrl  = async(presignedUrl) => {
     const uploadResponse = await axios.put(presignedUrl, selectedFile, {
       headers: {
         "Content-Type": 'text/plain',
@@ -58,7 +59,20 @@ function App() {
         return;
       }
 
-      uploadToPresignedUrl();
+    const res = getPresignedUrl();
+    const presignedUrl = (await res).data.url;
+    
+    const bucketName = (await res).data.bucket;
+    uploadToPresignedUrl(presignedUrl);
+
+    // const bucketName = presignedUrl.match(/https:\/\/([^.]+)\.s3\.[^.]+\.amazonaws\.com/)[1];
+
+    console.log(bucketName);
+
+
+      // upload to dynamoDB
+      // let s3Path = 
+      // await axios.post()
     } catch (error) {
       // Handle error
       console.error("Error uploading file:", error);

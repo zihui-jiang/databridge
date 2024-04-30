@@ -1,5 +1,3 @@
-
-// import * as nanoid from 'nanoid' there is issue with nanoid import
 import { DynamoDBClient, PutItemCommand } from '@aws-sdk/client-dynamodb';
 
 export interface Request {
@@ -14,12 +12,11 @@ export async function handleUploadRequest(event:any)  {
     const idLength = 10;
     const bucketName:string = process.env.BUCKET_NAME!;
     // Generate the ID, lenght is set to 10
-    // let id = nanoid.nanoid(idLength);
-    let id = 'test';
+    let id = (await import("nanoid")).nanoid(idLength);
     let request:Request = {
             id: id, 
             inputText: event.inputText, 
-            s3Path: bucketName + "/" + id + ".txt"
+            s3Path: bucketName + "/" + event.fileName + ".txt"
         };
     console.log(JSON.stringify(request));
     await recordInput(request);

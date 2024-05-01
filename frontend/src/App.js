@@ -6,8 +6,8 @@ function App() {
   const [inputText, setInputText] = useState('');
   const [selectedFile, setSelectedFile] = useState(null);
   const [uploadProgress, setUploadProgress] = useState(0);
-  const URL = 'https://sot2qb0384.execute-api.us-west-2.amazonaws.com';
-
+  const endPoint = 'https://ozhjdlw3ga.execute-api.us-west-2.amazonaws.com';
+  const endPoint2 = 'https://u3d1qlli22.execute-api.us-west-2.amazonaws.com';
 
   const handleInputChange = (event) => {
     setInputText(event.target.value);
@@ -19,7 +19,7 @@ function App() {
 
   const getPresignedUrl =  async() => {
     // GET request: presigned URL
-    const response = await axios.get(URL+"/presignedUrl", {
+    const response = await axios.get(endPoint+"/presignedUrl", {
       params: { fileName: selectedFile.name},
     });
 
@@ -46,6 +46,15 @@ function App() {
 
   }
 
+  const uploadInputs = async(inputText, fileName) => {
+    const postData = {
+      inputText: inputText,
+      fileName: fileName
+    };
+    const response = await axios.post(endPoint2 + '/fileUpload', postData);
+    console.log('Response:', response.data);
+  }
+
 
   const handleSubmit = async() => {
     try {
@@ -58,21 +67,19 @@ function App() {
         console.error("File type error.");
         return;
       }
+      if(inputText == "") {
+        console.error("Input text is empty.");
+        return;
+      }
+      console.info(inputText);
+      console.info(selectedFile.name);
+      
 
-    const res = getPresignedUrl();
-    const presignedUrl = (await res).data.url;
-    
-    const bucketName = (await res).data.bucket;
-    uploadToPresignedUrl(presignedUrl);
-
-    // const bucketName = presignedUrl.match(/https:\/\/([^.]+)\.s3\.[^.]+\.amazonaws\.com/)[1];
-
-    console.log(bucketName);
-
-
+      const res = getPresignedUrl();
+      const presignedUrl = (await res).data.url;
+      uploadToPresignedUrl(presignedUrl);
       // upload to dynamoDB
-      // let s3Path = 
-      // await axios.post()
+      uploadInputs(inputText, selectedFile.name)
     } catch (error) {
       // Handle error
       console.error("Error uploading file:", error);

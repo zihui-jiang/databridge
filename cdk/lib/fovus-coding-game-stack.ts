@@ -1,9 +1,8 @@
 import * as cdk from 'aws-cdk-lib';
 import { Construct } from 'constructs';
-import { aws_s3 as s3, aws_dynamodb as dynamodb} from 'aws-cdk-lib';
+import { aws_s3 as s3, aws_dynamodb as dynamodb, aws_ec2} from 'aws-cdk-lib';
 import { Function, Runtime, Code, StartingPosition } from 'aws-cdk-lib/aws-lambda';
 import { BucketDeployment, Source } from 'aws-cdk-lib/aws-s3-deployment';
-
 import { DynamoEventSource } from 'aws-cdk-lib/aws-lambda-event-sources';
 
 import {  HttpLambdaIntegration } from 'aws-cdk-lib/aws-apigatewayv2-integrations';
@@ -120,6 +119,20 @@ export class FovusCodingGameStack extends cdk.Stack {
     eventTrigger.addEventSource(new DynamoEventSource(table, {
       startingPosition: StartingPosition.LATEST,
     }));
+
+    const vpc = new aws_ec2.Vpc(this, 'MyVpc', {
+      natGateways: 0,
+    });
+    const securityGroup = new aws_ec2.SecurityGroup(this, 'sg', {
+      vpc: vpc
+  });
+
+    const ec2Instance = new aws_ec2.Instance(this,'ec2Instance', {
+      instanceType: aws_ec2.InstanceType.of(aws_ec2.InstanceClass.T3, aws_ec2.InstanceSize.MICRO),
+      machineImage: new aws_ec2.AmazonLinuxImage(),
+      vpc: vpc,
+      securityGroup: securityGroup
+  })
     
   }
 }

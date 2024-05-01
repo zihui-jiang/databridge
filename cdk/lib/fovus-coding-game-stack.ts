@@ -1,8 +1,10 @@
 import * as cdk from 'aws-cdk-lib';
 import { Construct } from 'constructs';
 import { aws_s3 as s3, aws_dynamodb as dynamodb} from 'aws-cdk-lib';
-import { Function, Runtime, Code } from 'aws-cdk-lib/aws-lambda';
-import { BucketDeployment, Source } from 'aws-cdk-lib/aws-s3-deployment'
+import { Function, Runtime, Code, StartingPosition } from 'aws-cdk-lib/aws-lambda';
+import { BucketDeployment, Source } from 'aws-cdk-lib/aws-s3-deployment';
+
+import { DynamoEventSource } from 'aws-cdk-lib/aws-lambda-event-sources';
 
 import {  HttpLambdaIntegration } from 'aws-cdk-lib/aws-apigatewayv2-integrations';
 import { HttpApi, HttpMethod, HttpStage } from 'aws-cdk-lib/aws-apigatewayv2'
@@ -39,6 +41,14 @@ export class FovusCodingGameStack extends cdk.Stack {
     });
     presignedProcessor.addEnvironment("BUCKET_NAME", this.bukcetName);
     presignedProcessor.addEnvironment("BUCKET_REGION", this.bukcetReigion);
+
+    const eventTrigger = new Function(this, 'triggerProcessor', {
+      functionName: 'TableStreamHandler',
+      code: Code.fromAsset(this.LAMBDA_PATH),
+      handler: 'index.triggerByEvent',
+      runtime: Runtime.NODEJS_20_X,
+    });
+
     /************/
     /*  APIGW   */
     /************/
@@ -59,8 +69,8 @@ export class FovusCodingGameStack extends cdk.Stack {
 
     
     // presignedAPI intergration
-    const presignedProcessorIntegration = new HttpLambdaIntegration('PresignedUrlAPI', requestProcessor);
-    const presignedUrlAPI = new HttpApi(this, 'presignedUrlAPI', {
+    const presignedProcessorIntegration = new HttpLambdaIntegration('PresignedUrl', presignedProcessor);
+    const presignedUrlAPI = new HttpApi(this, 'presignedUrl', {
       apiName: `PresignedUrlAPI`,
       createDefaultStage: true,
     });
@@ -68,7 +78,7 @@ export class FovusCodingGameStack extends cdk.Stack {
       httpApi: presignedUrlAPI,
       stageName: 'beta',
     });
-    fileUploadAPI.addRoutes({
+    presignedUrlAPI.addRoutes({
       path: '/presignedUrl',
       methods: [ HttpMethod.GET ],
       integration: presignedProcessorIntegration,
@@ -107,5 +117,9 @@ export class FovusCodingGameStack extends cdk.Stack {
       stream: dynamodb.StreamViewType.NEW_IMAGE,
     });
 
+    eventTrigger.addEventSource(new DynamoEventSource(table, {
+      startingPosition: StartingPosition.LATEST,
+    }));
+    
   }
 }

@@ -74,4 +74,4 @@ Ensure that the DynamoDB table is configured securely and efficiently.
 Implement a mechanism, possibly using AWS Lambda, to listen for events in DynamoDB.
 When a new event is detected, trigger the creation of a new VM.
 Automatically run the script with error handling upon VM creation.
-Implement error handling and logging within your script to handle any issues that may arise during execution.
+Implement error handling and logging within your script to handle any issues that may arise during execution.# FovusCodingGame

@@ -4,6 +4,7 @@ export interface Request {
     id: string;
     inputText: string;
     s3Path: string;
+    outputFile: string;
 }
 
 export async function handleUploadRequest(event:any)  {
@@ -13,16 +14,18 @@ export async function handleUploadRequest(event:any)  {
     const bucketName:string = process.env.BUCKET_NAME!;
     // Generate the ID, lenght is set to 10
     let id = (await import("nanoid")).nanoid(idLength);
+    let data = JSON.parse(event.body)
     let request:Request = {
             id: id, 
-            inputText: event.inputText, 
-            s3Path: bucketName + "/" + event.fileName + ".txt"
+            inputText: data.inputText, 
+            s3Path: bucketName + "/" + data.fileName,
+            outputFile:""
         };
     console.log(JSON.stringify(request));
     await recordInput(request);
     return {
         statusCode: 200,
-        headers: { "Content-Type": "text/plain" },
+        headers: { "Content-Type": "text/plain",'Access-Control-Allow-Origin': 'http://localhost:3000' },
         body: JSON.stringify({ message: "Hello, World!" }),
     };
 };
@@ -34,7 +37,8 @@ export async function recordInput(request: Request) {
         Item: {
             'id': {S: request.id},
             'inputText': {S: request.inputText},
-            's3Path': {S: request.s3Path}
+            's3Path': {S: request.s3Path},
+            'outputFile': {S: request.outputFile},
         }
     });
     const response = await dynamoClient.send(putItemCommand);
